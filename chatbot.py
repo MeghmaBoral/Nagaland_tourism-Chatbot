@@ -1,5 +1,7 @@
 import pandas as pd
 import requests
+import re
+import random
 
 # Load dataset
 data = pd.read_csv("data.csv")
@@ -105,20 +107,56 @@ I can help you with:
         return format_list("Tribal Culture Info", tribes)
 
     # ============================
-    # ITINERARY
+    # SMART ITINERARY GENERATOR
     # ============================
-    if "itinerary" in query or "plan" in query or "days" in query:
-        response = "🗺️ Suggested Nagaland Itinerary:\n\n"
+    if "itinerary" in query or "plan" in query or "trip" in query:
 
-        grouped = data.groupby("Day")
+        # detect number of days
+        numbers = re.findall(r'\d+', query)
 
-        for day, group in grouped:
-            row = group.iloc[0]
+        if numbers:
+            days = int(numbers[0])
+        elif "week" in query:
+            days = 7
+        else:
+            days = 3
 
-            response += f"📅 Day {day}:\n"
+        # detect location if mentioned
+        location_filter = None
+        locations = data["Location"].dropna().unique()
+
+        for loc in locations:
+            if loc.lower() in query:
+                location_filter = loc
+                break
+
+        # filter dataset if location mentioned
+        if location_filter:
+            filtered_data = data[data["Location"] == location_filter]
+        else:
+            filtered_data = data
+
+        if filtered_data.empty:
+            filtered_data = data
+
+        response = f"🗺️ {days} Day Nagaland Travel Plan\n\n"
+
+        total_rows = len(filtered_data)
+
+        for i in range(days):
+
+            row = filtered_data.iloc[i % total_rows]
+
+            response += f"📅 Day {i+1}\n"
             response += f"📍 Location: {row['Location']}\n"
-            response += f"👉 Activities: {row['Activities']}\n"
-            response += f"🍜 Food: {row['Food_and_Famous_Dishes']}\n\n"
+            response += f"🎯 Activities: {row['Activities']}\n"
+            response += f"🍜 Food: {row['Food_and_Famous_Dishes']}\n"
+            response += f"🏨 Stay: {row['Recommended_Hotels_with_Rating_and_PriceRange']}\n"
+
+            if "How_to_go" in row:
+                response += f"🚗 Travel Tip: {row['How_to_go']}\n"
+
+            response += "\n"
 
         return response
 
@@ -165,12 +203,12 @@ Answer:
 
         answer = response.json()["response"]
 
-        # Clean unwanted text
+        # clean unwanted text
         bad_words = ["Question:", "Answer:", "Example"]
         for word in bad_words:
             answer = answer.replace(word, "")
 
-        # Filter wrong states
+        # filter wrong states
         if any(x in answer.lower() for x in ["meghalaya", "assam", "manipur"]):
             return "⚠️ Sorry, I only provide information about Nagaland."
 
