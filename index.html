@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nagaland Chatbot</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="chat-container">
+    <h2>🌄 Nagaland AI Travel Assistant</h2>
+
+    <div id="chat-box"></div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Ask about Nagaland..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+function sendMessage() {
+    let input = document.getElementById("user-input").value;
+
+    if (!input) return;
+
+    let chatBox = document.getElementById("chat-box");
+
+    chatBox.innerHTML += `<div class="user-msg">You: ${input}</div>`;
+    chatBox.innerHTML += `<div class="bot-msg">Typing...</div>`;
+
+    fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: input})
+    })
+    .then(res => res.json())
+    .then(data => {
+        let msgs = document.getElementsByClassName("bot-msg");
+        msgs[msgs.length - 1].innerHTML = data.response.replace(/\n/g, "<br>");
+    });
+
+    document.getElementById("user-input").value = "";
+}
+</script>
+
+</body>
+</html>
